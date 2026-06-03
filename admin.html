@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMart - Dashboard Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-admin: #f8fafc;
+            --primary-blue: #0088ff;
+            --brand-teal: #00bfa5;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-admin);
+            color: var(--text-dark);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .admin-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-refresh {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* CARD RINGKASAN KEUANGAN */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-gray);
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-top: 4px;
+        }
+
+        /* LIVE FILTER */
+        .filter-container {
+            margin-bottom: 16px;
+        }
+        .filter-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        .filter-input:focus {
+            border-color: var(--primary-blue);
+        }
+
+        /* TABEL TRANSAKSI */
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 14px;
+            font-weight: 700;
+            color: var(--text-gray);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .badge-belanja { background: #e0f2fe; color: #0369a1; }
+        .badge-tukar { background: #fef3c7; color: #b45309; }
+
+        .loading-text {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-gray);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="admin-title">📊 MiniMart Admin Dashboard</div>
+            <button class="btn-refresh" onclick="fetchDataTransactions()">🔄 Refresh Data</button>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">💰 Total Omzet Belanja</div>
+                <div class="summary-value" id="sum-belanja">Rp 0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">🔄 Total Perputaran Uang</div>
+                <div class="summary-value" id="sum-tukar">Rp 0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">🧾 Total Nota Masuk</div>
+                <div class="summary-value" id="sum-nota">0 Transaksi</div>
+            </div>
+        </div>
+
+        <div class="filter-container">
+            <input type="text" id="admin-search" class="filter-input" placeholder="🔍 Cari berdasarkan ID Transaksi, Barang, atau Metode..." oninput="filterAdminTable()">
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>ID Transaksi</th>
+                        <th>Tipe</th>
+                        <th>Nominal/Total</th>
+                        <th>Metode</th>
+                        <th>Keterangan Tambahan</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr>
+                        <td colspan="6" class="loading-text">Memuat data dari Google Sheets...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // GANTI INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtfH_7FChR1SM8kMRSRetIe3pX7frltZpoITvY87H2FOqi_Eir4hUPbsZO8hVjKdSu/exec";
+
+        let allTransactions = [];
+
+        function fetchDataTransactions() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading-text">🔄 Sedang menyinkronkan data cloud...</td></tr>';
+
+            if (SCRIPT_URL === "MASUKKAN_URL_WEB_APP_ANDA_DISINI") {
+                tbody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color:red;">⚠️ SCRIPT_URL belum dikonfigurasi!</td></tr>';
+                return;
+            }
+
+            fetch(SCRIPT_URL)
+                .then(res => res.json())
+                .then(data => {
+                    // Balik urutan agar transaksi terbaru muncul di atas
+                    allTransactions = data.reverse(); 
+                    renderAdminTable(allTransactions);
+                    calculateSummary(allTransactions);
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color:red;">❌ Gagal memuat data: ' + err.message + '</td></tr>';
+                });
+        }
+
+        function renderAdminTable(dataArray) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (dataArray.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="loading-text">Belum ada riwayat transaksi masuk.</td></tr>';
+                return;
+            }
+
+            dataArray.forEach(item => {
+                const isBelanja = item.Tipe === "Belanja";
+                const badgeClass = isBelanja ? "badge-belanja" : "badge-tukar";
+                const totalFormatted = "Rp " + parseInt(item.Total_Belanja || 0).toLocaleString('id-ID');
+                
+                // Set isi kolom keterangan tambahan
+                let extraDesc = "-";
+                if (isBelanja) {
+                    extraDesc = `<strong>Item:</strong> ${item.Detail_Barang || '-'} <br><small style="color:gray">Tukar Sampingan: ${item.Opsi_Tukar || 'Tidak'}</small>`;
+                } else {
+                    extraDesc = `<strong>Tukar Uang Saja:</strong> ${item.Opsi_Tukar || '-'}`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="white-space:nowrap; color:gray;">${item.Tanggal || '-'}</td>
+                    <td style="font-weight:700;">${item.ID_Transaksi || '-'}</td>
+                    <td><span class="badge ${badgeClass}">${item.Tipe || 'Umum'}</span></td>
+                    <td style="font-weight:700; color:${isBelanja ? '#0088ff':'#d97706'}">${totalFormatted}</td>
+                    <td>style="font-weight:600;">${item.Metode_Bayar || '-'}</td>
+                    <td>${extraDesc}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function calculateSummary(dataArray) {
+            let totalBelanja = 0;
+            let totalTukar = 0;
+
+            dataArray.forEach(item => {
+                const nominal = parseInt(item.Total_Belanja || 0);
+                if (item.Tipe === "Belanja") {
+                    totalBelanja += nominal;
+                } else {
+                    totalTukar += nominal;
+                }
+            });
+
+            document.getElementById('sum-belanja').innerText = "Rp " + totalBelanja.toLocaleString('id-ID');
+            document.getElementById('sum-tukar').innerText = "Rp " + totalTukar.toLocaleString('id-ID');
+            document.getElementById('sum-nota').innerText = dataArray.length + " Transaksi";
+        }
+
+        function filterAdminTable() {
+            const query = document.getElementById('admin-search').value.toLowerCase();
+            const filtered = allTransactions.filter(item => {
+                return (item.ID_Transaksi || '').toLowerCase().includes(query) ||
+                       (item.Detail_Barang || '').toLowerCase().includes(query) ||
+                       (item.Metode_Bayar || '').toLowerCase().includes(query) ||
+                       (item.Tipe || '').toLowerCase().includes(query);
+            });
+            renderAdminTable(filtered);
+        }
+
+        // Ambil data otomatis saat halaman admin pertama kali dibuka
+        fetchDataTransactions();
+    </script>
+</body>
+</html>
